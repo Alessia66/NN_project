@@ -185,6 +185,14 @@ for counter in range (hyperparameters.K_FOLD):
     buff.append(max(history.history["accuracy"]))
     buff.append(max(history.history["val_accuracy"]))
 
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='upper left')
+    plt.show()
+
     if threshold < max(history.history["val_accuracy"]):
         History = history.history
         threshold = max(history.history["val_accuracy"])
