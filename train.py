@@ -22,7 +22,6 @@ import models
 import warnings
 warnings.filterwarnings("ignore")
 
-
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 tf.random.set_seed(hyperparameters.SEED)
@@ -180,7 +179,9 @@ for counter in range (hyperparameters.K_FOLD):
     #################### Save True and Predicted Label (Weight Precision : Float32) #########################
     buff = []
     buff.append(min(history.history["loss"]))
+    print(history.history['loss'])
     buff.append(min(history.history["val_loss"]))
+    print(history.history['val_loss'])
     buff.append(max(history.history["accuracy"]))
     buff.append(max(history.history["val_accuracy"]))
 
