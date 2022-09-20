@@ -191,7 +191,15 @@ for counter in range (hyperparameters.K_FOLD):
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(f"result/plot_epoch_{counter}.png", bbox_inches='tight')
+    plt.savefig(f"result/loss_plot_fold_{counter}.png", bbox_inches='tight')
+
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='upper left')
+    plt.savefig(f"result/accuracy_plot_fold_{counter}.png", bbox_inches='tight')
 
     if threshold < max(history.history["val_accuracy"]):
         History = history.history
