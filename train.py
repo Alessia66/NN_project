@@ -185,6 +185,7 @@ for counter in range (hyperparameters.K_FOLD):
     buff.append(max(history.history["accuracy"]))
     buff.append(max(history.history["val_accuracy"]))
 
+    plt.figure(figsize=(15,10))
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('model loss')
@@ -193,6 +194,7 @@ for counter in range (hyperparameters.K_FOLD):
     plt.legend(['train', 'validation'], loc='upper left')
     plt.savefig(f"result/loss_plot_fold_{counter}.png", bbox_inches='tight')
 
+    plt.figure(figsize=(15,10))
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])
     plt.title('model accuracy')
