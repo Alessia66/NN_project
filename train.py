@@ -195,8 +195,8 @@ for counter in range (hyperparameters.K_FOLD):
     plt.savefig(f"result/loss_plot_fold_{counter}.png", bbox_inches='tight')
 
     plt.figure(figsize=(15,10))
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
     plt.title('model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
