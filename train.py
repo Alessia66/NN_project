@@ -1,15 +1,13 @@
+##########
+ #Imports
+#
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
-
 import datetime
 import time
 import argparse
-
 import tensorflow as tf
-
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-
-
 from dataio import *
 from callbacks import *
 from model_saver import *
@@ -17,10 +15,9 @@ from loss import *
 from tflite_evaluate import *
 import hyperparameters
 import models
-
-
 import warnings
 warnings.filterwarnings("ignore")
+############
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -28,11 +25,9 @@ tf.random.set_seed(hyperparameters.SEED)
 np.random.seed(hyperparameters.SEED)
 
 
+#####The argparse module makes it easy to write user-friendly command-line interfaces.######
+#####It parses the defined arguments from the sys.argv.#####################################
 
-
-
-
-# construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-dn", "--dataset_name",
                 required=True,
@@ -76,7 +71,7 @@ ap.add_argument("-m", "--merge_tflite",
 
 args = vars(ap.parse_args())
 
-
+##### put the input argument in the variables useful for training ######
 dataset_name = args["dataset_name"]
 input_durations = args["input_durations"]
 audio_type = args["audio_type"]
@@ -85,8 +80,7 @@ verbose = args["verbose"]
 input_type = args["input_type"]
 cache = args["cache"]
 merge_tflite = args["merge_tflite"]
-
-
+########################################################################
 
 
 
@@ -102,10 +96,6 @@ dataset_name = Segmented_datasetname_format.format(dataset_name, input_durations
 print(".................................. Segment Dataset finished ......................................")
 
 
-
-
-
-
 threshold = 0
 
 Result = []
@@ -114,7 +104,16 @@ Predicted_targets = np.array([])
 Actual_targets = np.array([])
 
 
-
+#defined inside dataio.py
+ # @brief Function used to retrieve the parameter for the function make_dataset
+ #
+ # @param file the pointer to file strcture
+ # @param dataset name: name of the dataset
+ # @param audio_type: type of audio traces
+ # @return Filenames an  array of all filenames inside the dataset folders
+ # @return Splited_Index an array containing for each speaker the index of the files
+ # @return Labels_list List of all files/folder inside the dataset's first folder
+#
 Filenames, Splited_Index, Labels_list = split_dataset(dataset_name, audio_type=audio_type)
 
 
@@ -126,16 +125,35 @@ for counter in range (hyperparameters.K_FOLD):
     start_time = time.time()
     
 
-
+#defined inside callbacks.py
+ # @brief Function keeps the initial learning rate for the first 50 epochs and decreases it exponentially after that.
+ #
+ # @return learningrate_scheduler the learning rate for the training phase
+#
     learningrate_scheduler = LearningRateScheduler()
-
     return_bestweight = BestModelWeights()
     
     callbacks = [learningrate_scheduler, return_bestweight]
     if verbose == 0:
         callbacks += [ShowProgress(hyperparameters.EPOCHS)]
 
-    
+
+#defined inside dataio.py
+ # @brief Function used to split the dataset in train and test
+ #
+ # @param dataset_name name of the datset
+ # @param filenames filenames of the dataset folders
+ # @param splited_index an array containing for each speaker the index of the files
+ # @param labels_list List of all files/folder inside the dataset's first folder
+ # @param index_selection_fold current folder number
+ # @param cache type of caching dataset
+ # @param merge_tflite true if you want mfcc feature extractor to be merged in tflite model
+ # @param input_type type of the input 
+ # @param maker 
+ # @return Filenames an  array of all filenames inside the dataset folders
+ # @return Splited_Index an array containing for each speaker the index of the files
+ # @return Labels_list List of all files/folder inside the dataset's first folder
+#   
     train_dataset, test_dataset = make_dataset(dataset_name=dataset_name,
                                                filenames=Filenames,
                                                splited_index=Splited_Index,
@@ -159,13 +177,26 @@ for counter in range (hyperparameters.K_FOLD):
 
 
     
-    
+#defined inside dataio.py
+ # @brief config the model with losses and metrics
+ #
+ # @param optimizer String (name of optimizer)
+ # @param loss Loss function. May be a string (name of loss function), or a tf.keras.losses.Loss instance. 
+ # @param metrics: List of metrics to be evaluated by the model during training and testing.
+ # 
     model.compile(optimizer=tf.keras.optimizers.Adam(hyperparameters.LEARNING_RATE),
                   loss=loss,
                   metrics=['accuracy']) 
-    
-    
-    #steps_per_epoch = (len(Filenames) - len(Splited_Index[counter])) // hyperparameters.BATCH_SIZE + 1
+#defined inside dataio.py
+ # @brief  Trains the model for a fixed number of epochs (iterations on a dataset).
+ #
+ # @param train dataset: Input data.
+ # @param epochs: number of epochs 
+ # @param validation data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+ # @param callbacks: List of callbacks to apply during training. 
+ # @param verbose: Verbosity mode.
+ # @return A History object. Its History.history attribute is a record of training loss values and metrics values at successive epochs, as well as validation loss values and validation metrics values (if applicable).
+ #   
     history = model.fit(train_dataset,
                         #steps_per_epoch=steps_per_epoch,
                         epochs=hyperparameters.EPOCHS,
@@ -179,29 +210,9 @@ for counter in range (hyperparameters.K_FOLD):
     #################### Save True and Predicted Label (Weight Precision : Float32) #########################
     buff = []
     buff.append(min(history.history["loss"]))
-    print(history.history['loss'])
     buff.append(min(history.history["val_loss"]))
-    print(history.history['val_loss'])
     buff.append(max(history.history["accuracy"]))
     buff.append(max(history.history["val_accuracy"]))
-
-    plt.figure(figsize=(15,10))
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(f"result/loss_plot_fold_{counter}.png", bbox_inches='tight')
-
-    plt.figure(figsize=(15,10))
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(f"result/accuracy_plot_fold_{counter}.png", bbox_inches='tight')
 
     if threshold < max(history.history["val_accuracy"]):
         History = history.history
@@ -221,6 +232,8 @@ for counter in range (hyperparameters.K_FOLD):
     BuffY = tf.concat(BuffY, axis=0).numpy()
     Prediction = np.argmax(model.predict(BuffX), axis=1)
 
+    ####### Compute Accuracy ##########
+
     Predicted_targets = np.append(Predicted_targets, Prediction)
     Actual_targets = np.append(Actual_targets, BuffY)
 
@@ -233,7 +246,22 @@ for counter in range (hyperparameters.K_FOLD):
 
 
 
-
+#defined inside dataio.py
+ # @brief Function used to split the dataset in train and test (in this case used to get the test dataset related to the best model
+ #
+ # @param dataset_name name of the datset
+ # @param filenames filenames of the dataset folders
+ # @param splited_index an array containing for each speaker the index of the files
+ # @param labels_list List of all files/folder inside the dataset's first folder
+ # @param index_selection_fold BEST folder number
+ # @param cache type of caching dataset
+ # @param merge_tflite true if you want mfcc feature extractor to be merged in tflite model
+ # @param input_type type of the input 
+ # @param maker 
+ # @return Filenames an  array of all filenames inside the dataset folders
+ # @return Splited_Index an array containing for each speaker the index of the files
+ # @return Labels_list List of all files/folder inside the dataset's first folder
+#   
 ###################################### prepare the test part related to the best model ##########################################
 _, test_dataset = make_dataset(dataset_name=dataset_name,
                                filenames=Filenames,
